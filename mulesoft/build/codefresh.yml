@@ -1,0 +1,102 @@
+version: 1.0
+
+stages:
+  - clone
+  - prepare
+  - build
+  - package
+
+steps:
+  clone:
+    title: Cloning MuleSoft Repository
+    type: git-clone
+    repo: ${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}
+    revision: ${{CF_BRANCH}}
+    git: gh-test-git-provider
+    stage: clone
+
+  CloneCodeFreshExtResource :
+    title: Cloning Mulesoft Scripts Repository
+    type: git-clone
+    repo: ${{CF_REPO_OWNER}}/${{CF_EXTERNAL_REPO_NAME}}
+    revision: ${{CF_EXTERNAL_BRANCH}}
+    git: gh-test-git-provider
+    stage: clone
+
+  FetchSecrets:
+    title: Fetch secrets from AWS Secrets Manager
+    type: aws-secrets-manager
+    arguments:
+      AWS_DEFAULT_REGION: us-west-2
+      secrets:
+        - secret_arn: codefresh
+          key: sonar_token
+          store_in: SONAR_TOKEN
+        - secret_arn: codefresh
+          key: jira_api_token
+          store_in: JIRA_API_TOKEN
+        - secret_arn: mulesoft/dev/apikeys
+          key: secure_key
+          store_in: MULESOFT_SECURE_KEY
+        - secret_arn: mulesoft/dev/apikeys
+          key: repo_token
+          store_in: MULESOFT_REPO_TOKEN
+        - secret_arn: mulesoft/dev/apikeys
+          key: client_id
+          store_in: MULESOFT_CONNECTED_APP_CLIENT_ID
+        - secret_arn: mulesoft/dev/apikeys
+          key: client_secret
+          store_in: MULESOFT_CONNECTED_APP_CLIENT_SECRET
+        - secret_arn: mulesoft/dev/apikeys
+          key: artifactory_username
+          store_in: MULESOFT_ARTIFACTORY_USERNAME
+        - secret_arn: mulesoft/dev/apikeys
+          key: artifactory_password
+          store_in: MULESOFT_ARTIFACTORY_PASSWORD
+    stage: prepare
+
+  GenerateConnectedAppToken:
+    title: Generate Connected App Token
+    type: freestyle
+    image: dwdraju/alpine-curl-jq:latest
+    working_directory: ${{CloneCodeFreshExtResource}}
+    commands:
+      - ls -lth
+      - mulesoft/scripts/fetch_connected_app_token.sh
+    stage: prepare
+
+  MavenBuild:
+    title: Maven Build
+    type: freestyle
+    image: maven:3.8-openjdk-11-slim
+    working_directory: ${{clone}}
+    commands:
+      - echo token is ${MULESOFT_CONNECTED_APP_TOKEN}
+      - >-
+        mvn -s build/settings.xml clean package
+        -DskipTests
+        -Dmule.env=${{TARGET_ENVIRONMENT}}
+        -DsecureKey=${MULESOFT_SECURE_KEY}
+        -DRepoToken=${MULESOFT_REPO_TOKEN}
+        -Dtoken=${MULESOFT_CONNECTED_APP_TOKEN}
+        -Dmaven.repo.local=/codefresh/volume/m2_repository
+    stage: build
+
+  Artifactory:
+    title: Upload to Artifactory
+    type: freestyle
+    image: maven:3.8-openjdk-11-slim
+    working_directory: ${{clone}}
+    commands:
+      - echo token is ${MULESOFT_CONNECTED_APP_TOKEN}
+      - >-
+        mvn -s build/settings.xml clean deploy
+        -DskipTests
+        -Dmule.env=${{TARGET_ENVIRONMENT}}
+        -DsecureKey=${MULESOFT_SECURE_KEY}
+        -DRepoToken=${MULESOFT_REPO_TOKEN}
+        -Dtoken=${MULESOFT_CONNECTED_APP_TOKEN}
+        -Dmaven.repo.local=/codefresh/volume/m2_repository
+        -Dartifactory.username=${MULESOFT_ARTIFACTORY_USERNAME}
+        -Dartifactory.password=${MULESOFT_ARTIFACTORY_PASSWORD}
+    stage: package
