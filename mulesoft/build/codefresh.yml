@@ -15,7 +15,7 @@ steps:
     git: gh-test-git-provider
     stage: clone
 
-  CloneCodeFreshExtResource :
+  CloneCodeFreshExtResource:
     title: Cloning Mulesoft Scripts Repository
     type: git-clone
     repo: ${{CF_REPO_OWNER}}/${{CF_EXTERNAL_REPO_NAME}}
@@ -73,7 +73,7 @@ steps:
     commands:
       - echo token is ${MULESOFT_CONNECTED_APP_TOKEN}
       - >-
-        mvn -s build/settings.xml clean package
+        mvn -s ${{CloneCodeFreshExtResource}}/mulesoft/settings.xml clean package
         -DskipTests
         -Dmule.env=${{TARGET_ENVIRONMENT}}
         -DsecureKey=${MULESOFT_SECURE_KEY}
@@ -90,7 +90,7 @@ steps:
     commands:
       - echo token is ${MULESOFT_CONNECTED_APP_TOKEN}
       - >-
-        mvn -s build/settings.xml clean deploy
+        mvn -s ${{CloneCodeFreshExtResource}}/mulesoft/settings.xml clean deploy
         -DskipTests
         -Dmule.env=${{TARGET_ENVIRONMENT}}
         -DsecureKey=${MULESOFT_SECURE_KEY}

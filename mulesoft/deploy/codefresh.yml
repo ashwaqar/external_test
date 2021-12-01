@@ -14,7 +14,7 @@ steps:
     git: gh-test-git-provider
     stage: clone
 
-  CloneCodeFreshExtResource :
+  CloneCodeFreshExtResource:
     title: Cloning Mulesoft Scripts Repository
     type: git-clone
     repo: ${{CF_REPO_OWNER}}/${{CF_EXTERNAL_REPO_NAME}}
@@ -75,7 +75,7 @@ steps:
         PROJECT_VERSION=$( mvn help:evaluate -Dexpression=project.version -q -DforceStdout )
         PROJECT_ARTIFACT_ID=$( mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout )
 
-        mvn -s build/settings.xml
+        mvn -s ${{CloneCodeFreshExtResource}}/mulesoft/settings.xml
         dependency:get -U
         -DgroupId=com.guardant
         -DartifactId=$PROJECT_ARTIFACT_ID
@@ -89,6 +89,24 @@ steps:
         -Dartifactory.password=${MULESOFT_ARTIFACTORY_PASSWORD}
     stage: prepare
 
+  TerraformInitPlanApply:
+    image: hashicorp/terraform:1.0.5
+    title: Terraform Init, Plan and Apply
+    working_directory: ${{clone}}/terraform
+    commands:
+      - >-
+        terraform init
+        -input=false
+        -backend-config=environments/${TARGET_ENVIRONMENT}/remote-backend.properties
+      - terraform validate
+      - >-
+        terraform plan
+        -out=${TARGET_ENVIRONMENT}_tfplan
+        -var-file=environments/${TARGET_ENVIRONMENT}/terraform.tfvars
+      - >-
+        terraform apply ${TARGET_ENVIRONMENT}_tfplan
+    stage: deploy
+
   Deploy:
     title: Deploy to Mulesoft
     type: freestyle
@@ -100,7 +118,7 @@ steps:
         PROJECT_VERSION=$( mvn help:evaluate -Dexpression=project.version -q -DforceStdout )
         PROJECT_ARTIFACT_ID=$( mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout )
 
-        mvn -s build/settings.xml mule:deploy
+        mvn -s ${{CloneCodeFreshExtResource}}/mulesoft/settings.xml mule:deploy
         -Dmaven.repo.local=/codefresh/volume/m2_repository
         -P${{TARGET_ENVIRONMENT}}
         -Dartifactory.username=${MULESOFT_ARTIFACTORY_USERNAME}
