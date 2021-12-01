@@ -73,7 +73,7 @@ steps:
     commands:
       - echo token is ${MULESOFT_CONNECTED_APP_TOKEN}
       - >-
-        mvn -s ${{CloneCodeFreshExtResource}}/mulesoft/settings.xml clean package
+        mvn -s ../${{CF_EXTERNAL_REPO_NAME}}/mulesoft/settings.xml clean package
         -DskipTests
         -Dmule.env=${{TARGET_ENVIRONMENT}}
         -DsecureKey=${MULESOFT_SECURE_KEY}
@@ -90,7 +90,7 @@ steps:
     commands:
       - echo token is ${MULESOFT_CONNECTED_APP_TOKEN}
       - >-
-        mvn -s ${{CloneCodeFreshExtResource}}/mulesoft/settings.xml clean deploy
+        mvn -s ../${{CF_EXTERNAL_REPO_NAME}}/mulesoft/settings.xml clean deploy
         -DskipTests
         -Dmule.env=${{TARGET_ENVIRONMENT}}
         -DsecureKey=${MULESOFT_SECURE_KEY}

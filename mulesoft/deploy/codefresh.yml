@@ -75,7 +75,7 @@ steps:
         PROJECT_VERSION=$( mvn help:evaluate -Dexpression=project.version -q -DforceStdout )
         PROJECT_ARTIFACT_ID=$( mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout )
 
-        mvn -s ${{CloneCodeFreshExtResource}}/mulesoft/settings.xml
+        mvn -s ../${{CF_EXTERNAL_REPO_NAME}}/mulesoft/settings.xml
         dependency:get -U
         -DgroupId=com.guardant
         -DartifactId=$PROJECT_ARTIFACT_ID
@@ -118,7 +118,7 @@ steps:
         PROJECT_VERSION=$( mvn help:evaluate -Dexpression=project.version -q -DforceStdout )
         PROJECT_ARTIFACT_ID=$( mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout )
 
-        mvn -s ${{CloneCodeFreshExtResource}}/mulesoft/settings.xml mule:deploy
+        mvn -s ../${{CF_EXTERNAL_REPO_NAME}}/mulesoft/settings.xml mule:deploy
         -Dmaven.repo.local=/codefresh/volume/m2_repository
         -P${{TARGET_ENVIRONMENT}}
         -Dartifactory.username=${MULESOFT_ARTIFACTORY_USERNAME}
