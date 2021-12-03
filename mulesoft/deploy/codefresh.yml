@@ -92,18 +92,22 @@ steps:
   TerraformInitPlanApply:
     image: hashicorp/terraform:1.0.5
     title: Terraform Init, Plan and Apply
-    working_directory: ${{clone}}/terraform
+    working_directory: ${{clone}}
     commands:
+      - if [ ! -d "terraform" ]; then exit 0; fi
       - >-
+        cd terraform;
+
         terraform init
         -input=false
-        -backend-config=environments/${TARGET_ENVIRONMENT}/remote-backend.properties
-      - terraform validate
-      - >-
+        -backend-config=environments/${TARGET_ENVIRONMENT}/remote-backend.properties;
+
+        terraform validate;
+
         terraform plan
         -out=${TARGET_ENVIRONMENT}_tfplan
-        -var-file=environments/${TARGET_ENVIRONMENT}/terraform.tfvars
-      - >-
+        -var-file=environments/${TARGET_ENVIRONMENT}/terraform.tfvars;
+
         terraform apply ${TARGET_ENVIRONMENT}_tfplan
     stage: deploy
 
