@@ -1,0 +1,111 @@
+version: "1.0"
+
+stages:
+  - clone
+  - build
+  - prepare
+  - test
+  - image
+  - enrich
+
+steps:
+  clone:
+    title: Cloning repository
+    type: git-clone
+    repo: ${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}
+    revision: ${{CF_BRANCH}}
+    git: gh-test-git-provider
+    stage: clone
+
+  MavenBuild:
+    title: mvn build
+    type: freestyle
+    image: maven:3.8-openjdk-11-slim
+    working_directory: ${{clone}}
+    commands:
+      - >-
+        mvn clean package
+        -Dmaven.repo.local=/codefresh/volume/m2_repository
+    stage: build
+
+  MavenGetProjectVersion:
+    title: mvn get project version
+    type: freestyle
+    image: maven:3.8-openjdk-11-slim
+    working_directory: ${{clone}}
+    commands:
+      - export PROJECT_VERSION=$( mvn help:evaluate -Dexpression=project.version -q -DforceStdout )
+      - echo "project version is ${PROJECT_VERSION}"
+      - cf_export PROJECT_VERSION=${PROJECT_VERSION}
+    stage: prepare
+
+  FetchSecrets:
+    title: Fetch secrets from AWS Secrets Manager
+    type: aws-secrets-manager
+    arguments:
+      AWS_DEFAULT_REGION: us-west-2
+      secrets:
+        - secret_arn: codefresh
+          key: sonar_token
+          store_in: SONAR_TOKEN
+        - secret_arn: codefresh
+          key: jira_api_token
+          store_in: JIRA_API_TOKEN
+    stage: prepare
+
+  sonar:
+    title: sonar analysis
+    type: freestyle
+    image: maven:3.8-openjdk-11-slim
+    working_directory: ${{clone}}
+    when:
+      condition:
+        all:
+          RunSonar: '${{RUN_SONAR_STEP}} == true'
+    commands:
+      - >-
+        mvn clean install sonar:sonar
+        -Dmaven.repo.local=/codefresh/volume/m2_repository
+        -Dsonar.host.url=${SONAR_HOST}
+        -Dsonar.login=${SONAR_TOKEN}
+    stage: test
+
+  DockerBuild:
+    title: Building Docker image
+    type: build
+    image_name: ${{image_name}}
+    working_directory: ${{clone}}
+    tag: ${{CF_BRANCH_TAG_NORMALIZED}}
+    registry: gh-screening-repo
+    dockerfile: Dockerfile
+    stage: image
+
+  JiraIssueExtractor:
+    title: Extract jira issue from message and convert it to image annotation
+    type: jira-issue-extractor
+    arguments:
+      IMAGE: 137219723686.dkr.ecr.us-west-2.amazonaws.com/${{image_name}}:${{CF_BRANCH_TAG_NORMALIZED}}
+      JIRA_PROJECT_PREFIX: SO2C
+      MESSAGE: ${{CF_BRANCH}}:${{CF_COMMIT_MESSAGE}}
+      JIRA_HOST: guardanthealth.atlassian.net
+      JIRA_EMAIL: spothedar@guardanthealth.com
+      JIRA_API_TOKEN: ${JIRA_API_TOKEN}
+    when:
+      condition:
+        all:
+          JiraIssueExtractor: "true == false"
+    stage: enrich
+
+  EnrichImages:
+    title: Enrich image with PRs and Issues info
+    type: image-enricher
+    arguments:
+      IMAGE: 137219723686.dkr.ecr.us-west-2.amazonaws.com/${{image_name}}:${{CF_BRANCH_TAG_NORMALIZED}}
+      BRANCH: ${{CF_BRANCH}}
+      REPO: ${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}
+      GIT_PROVIDER_NAME: gh-test-git-provider
+    when:
+      condition:
+        all:
+          EnrichImages: "true == false"
+    stage: enrich

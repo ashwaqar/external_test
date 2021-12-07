@@ -100,14 +100,13 @@ steps:
 
         terraform init
         -input=false
-        -backend-config=environments/${TARGET_ENVIRONMENT}/remote-backend.properties;
-
-        terraform validate;
-
+        -backend-config=environments/${TARGET_ENVIRONMENT}/remote-backend.properties
+      - terraform validate
+      - >-
         terraform plan
         -out=${TARGET_ENVIRONMENT}_tfplan
-        -var-file=environments/${TARGET_ENVIRONMENT}/terraform.tfvars;
-
+        -var-file=environments/${TARGET_ENVIRONMENT}/terraform.tfvars
+      - >-
         terraform apply ${TARGET_ENVIRONMENT}_tfplan
     stage: deploy
 

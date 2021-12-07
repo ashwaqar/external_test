@@ -1,0 +1,62 @@
+
+version: "1.0"
+
+stages:
+  - clone
+  - prepare
+  - terraform
+  - sync
+
+steps:
+  clone:
+    title: Cloning MuleSoft Repository
+    type: git-clone
+    repo: ${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}
+    revision: ${{CF_BRANCH}}
+    git: gh-test-git-provider
+    stage: clone
+
+  FetchSecrets:
+    title: Fetch secrets from AWS Secrets Manager
+    type: aws-secrets-manager
+    arguments:
+      AWS_DEFAULT_REGION: us-west-2
+      secrets:
+        - secret_arn: 'codefresh'
+          key: github_personal_access_token
+          store_in: GITHUB_PERSONAL_ACCESS_TOKEN
+    stage: prepare
+
+  TerraformInitPlanApply:
+    image: hashicorp/terraform:1.0.5
+    title: Terraform Init, Plan and Apply
+    working_directory: ${{clone}}
+    commands:
+      - if [ ! -d "terraform" ]; then exit 0; fi
+      - git config --global url."https://foo:${GITHUB_PERSONAL_ACCESS_TOKEN}@github.com/gh-org-screening".insteadOf "https://github.com/gh-org-screening"
+      - >-
+        cd terraform;
+
+        terraform init
+        -input=false
+        -backend-config=environments/${TARGET_ENVIRONMENT}/remote-backend.properties
+      - terraform validate
+      - >-
+        terraform plan
+        -out=${TARGET_ENVIRONMENT}_tfplan
+        -var-file=environments/${TARGET_ENVIRONMENT}/terraform.tfvars
+      - >-
+        terraform apply ${TARGET_ENVIRONMENT}_tfplan
+    stage: terraform
+
+  sync_and_wait:
+    title: Sync ArgoCD app and wait
+    type: argocd-sync
+    stage: sync
+    arguments:
+      context: argocd-dev
+      app_name: ${{APP_NAME}}-${TARGET_ENVIRONMENT}
+      wait_healthy: true
+      debug: true
+      additional_flags:
+        - '--grpc-web'  # Seems to always be needed, regardless of Argo CD using LB svc or Ingress
