@@ -1,0 +1,21 @@
+helm-backend-services:
+  limit_cpu: '"200m"'
+  limit_memory: '"512Mi"'
+  container_port: 8081
+  account_id: 137219723686
+  region: us-west-2
+  app_name: "text-extraction-service"
+  namespace: "tes-sqa"
+  acm_arn: "arn:aws:acm:us-west-2:137219723686:certificate/4e1ca59a-bdd2-4f8d-be61-7f7f0e83add8"
+  role_arn: "arn:aws:iam::137219723686:role/so2c-ocr-sqa-service-account-role"
+  dns_name: "tes-sqa.screening.guardanthealth.com"
+  app_image: "137219723686.dkr.ecr.us-west-2.amazonaws.com/text-extraction-service:main"
+  environment: sqa
+  configmap:
+    environment: sqa
+    lunar2TRFIdentifier: "Guardant SHIELD,Test Requisition Form"
+    region: us-west-2
+    account: "137219723686"
+  secrets:
+    name: tes-screening-sqa-aws-secret
+    

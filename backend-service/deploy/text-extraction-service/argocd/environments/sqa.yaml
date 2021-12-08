@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: text-extraction-service-sqa
+  namespace: argo-cd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  destination:
+    namespace: tes-sqa
+    name: codefresh-auto-dev
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
+  project: default
+  source:
+    repoURL: https://github.com/gh-org-screening/codefresh-external-resources.git
+    targetRevision: main
+    path: backend-service/deploy/text-extraction-service/helm/text-extraction-service
+    helm:
+      valueFiles:
+        - values-sqa.yaml

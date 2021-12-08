@@ -1,0 +1,9 @@
+apiVersion: v2
+name: text-extraction-service
+description: A Helm chart for TES
+type: application
+version: 0.0.9
+dependencies:
+  - name: helm-backend-services
+    version: "0.0.8"
+    repository: "oci://137219723686.dkr.ecr.us-west-2.amazonaws.com"

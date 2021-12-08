@@ -1,0 +1,21 @@
+helm-backend-services:
+  limit_cpu: '"200m"'
+  limit_memory: '"512Mi"'
+  container_port: 8081
+  account_id: 137219723686
+  region: us-west-2
+  app_name: "text-extraction-service"
+  namespace: "tes-dev"
+  acm_arn: "arn:aws:acm:us-west-2:137219723686:certificate/994cd440-2fa8-4c09-a814-abbe53c935f1"
+  role_arn: "arn:aws:iam::137219723686:role/so2c-ocr-dev-service-account-role"
+  dns_name: "tes-dev.screening.guardanthealth.com"
+  app_image: "137219723686.dkr.ecr.us-west-2.amazonaws.com/text-extraction-service:main"
+  environment: dev
+  configmap:
+    environment: dev
+    lunar2TRFIdentifier: "Guardant SHIELD,Test Requisition Form"
+    region: us-west-2
+    account: "137219723686"
+  secrets:
+    name: tes-screening-aws-secret
+
