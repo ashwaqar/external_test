@@ -7,6 +7,7 @@ stages:
   - test
   - image
   - enrich
+  - UpdateDev
 
 steps:
   clone:
@@ -51,6 +52,9 @@ steps:
         - secret_arn: codefresh
           key: jira_api_token
           store_in: JIRA_API_TOKEN
+        - secret_arn: codefresh
+          key: github_personal_access_token
+          store_in: GITHUB_PERSONAL_ACCESS_TOKEN
     stage: prepare
 
   sonar:
@@ -75,7 +79,9 @@ steps:
     type: build
     image_name: ${{image_name}}
     working_directory: ${{clone}}
-    tag: ${{CF_BRANCH_TAG_NORMALIZED}}
+    tags: 
+      - ${{CF_BRANCH_TAG_NORMALIZED}}-${{CF_SHORT_REVISION}}
+      - ${{CF_BRANCH_TAG_NORMALIZED}}-latest
     registry: gh-screening-repo
     dockerfile: Dockerfile
     stage: image
@@ -109,3 +115,36 @@ steps:
         all:
           EnrichImages: "true == false"
     stage: enrich
+    
+  cloneDeployment:
+      title: Cloning repository
+      type: git-clone
+      repo: ${{CF_REPO_OWNER}}/so2c-deployment-manager
+      revision: dev
+      git: gh-test-git-provider
+      when:
+        condition:
+          all:
+            mainBranch: '"${{CF_BRANCH}}" == "main"'
+      stage: UpdateDev  
+      
+  UpdateDev:
+      title: Update Dev Version
+      type: freestyle
+      image: quay.io/bitnami/git:latest
+      working_directory: ${{cloneDeployment}}
+      when:
+        condition:
+          all:
+            mainBranch: '"${{CF_BRANCH}}" == "main"'
+            validateSha: 'length("${{CF_SHORT_REVISION}}") >= 7'
+
+      commands:
+            - git config --global url."https://foo:${GITHUB_PERSONAL_ACCESS_TOKEN}@github.com/gh-org-screening".insteadOf "https://github.com/gh-org-screening"
+            - git config --global user.name "gh-lunar2-svc-deployment-user"
+            - git config --global user.email "gh-lunar2-svc-deployment-user@guardanthealth.com"
+            - sed -i 's/${{image_name}}:.*/${{image_name}}:${{CF_BRANCH_TAG_NORMALIZED}}-${{CF_SHORT_REVISION}}"/g' ${{image_name}}/helm/${{image_name}}/values.yaml
+            - git add ${{image_name}}/helm/${{image_name}}/values.yaml
+            - git commit -m  "Upgrade ${{image_name}} dev"
+            - git push -u origin dev
+      stage: UpdateDev    
