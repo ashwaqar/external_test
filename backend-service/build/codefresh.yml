@@ -145,6 +145,6 @@ steps:
             - git config --global user.email "gh-lunar2-svc-deployment-user@guardanthealth.com"
             - sed -i 's/${{image_name}}:.*/${{image_name}}:${{CF_BRANCH_TAG_NORMALIZED}}-${{CF_SHORT_REVISION}}"/g' ${{image_name}}/helm/${{image_name}}/values.yaml
             - git add ${{image_name}}/helm/${{image_name}}/values.yaml
-            - git commit -m  "Upgrade ${{image_name}} dev"
+            - git commit -m  "Upgrade ${{image_name}} dev" || echo "nothing to commit"
             - git push -u origin dev
       stage: UpdateDev    
