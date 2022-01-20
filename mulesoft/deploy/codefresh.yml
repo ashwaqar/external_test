@@ -34,22 +34,22 @@ steps:
         - secret_arn: codefresh
           key: jira_api_token
           store_in: JIRA_API_TOKEN
-        - secret_arn: mulesoft/dev/apikeys
+        - secret_arn: mulesoft/${{TARGET_ENVIRONMENT}}/apikeys
           key: secure_key
           store_in: MULESOFT_SECURE_KEY
-        - secret_arn: mulesoft/dev/apikeys
+        - secret_arn: mulesoft/${{TARGET_ENVIRONMENT}}/apikeys
           key: repo_token
           store_in: MULESOFT_REPO_TOKEN
-        - secret_arn: mulesoft/dev/apikeys
+        - secret_arn: mulesoft/${{TARGET_ENVIRONMENT}}/apikeys
           key: client_id
           store_in: MULESOFT_CONNECTED_APP_CLIENT_ID
-        - secret_arn: mulesoft/dev/apikeys
+        - secret_arn: mulesoft/${{TARGET_ENVIRONMENT}}/apikeys
           key: client_secret
           store_in: MULESOFT_CONNECTED_APP_CLIENT_SECRET
-        - secret_arn: mulesoft/dev/apikeys
+        - secret_arn: mulesoft/${{TARGET_ENVIRONMENT}}/apikeys
           key: artifactory_username
           store_in: MULESOFT_ARTIFACTORY_USERNAME
-        - secret_arn: mulesoft/dev/apikeys
+        - secret_arn: mulesoft/${{TARGET_ENVIRONMENT}}/apikeys
           key: artifactory_password
           store_in: MULESOFT_ARTIFACTORY_PASSWORD
     stage: prepare
