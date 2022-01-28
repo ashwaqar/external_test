@@ -75,7 +75,7 @@ steps:
         PROJECT_VERSION=$( mvn help:evaluate -Dexpression=project.version -q -DforceStdout )
         PROJECT_ARTIFACT_ID=$( mvn help:evaluate -Dexpression=project.artifactId -q -DforceStdout )
 
-        mvn -s ../${{CF_EXTERNAL_REPO_NAME}}/mulesoft/settings.xml
+        mvn clean -s ../${{CF_EXTERNAL_REPO_NAME}}/mulesoft/settings.xml
         dependency:get -U
         -DgroupId=com.guardant
         -DartifactId=$PROJECT_ARTIFACT_ID
