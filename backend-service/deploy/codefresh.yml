@@ -1,4 +1,3 @@
-
 version: "1.0"
 
 stages:
@@ -27,34 +26,57 @@ steps:
           store_in: GITHUB_PERSONAL_ACCESS_TOKEN
     stage: prepare
 
-  TerraformInitPlanApply:
-    image: hashicorp/terraform:1.0.5
-    title: Terraform Init, Plan and Apply
-    working_directory: ${{clone}}
-    commands:
-      - if [ ! -d "terraform" ]; then exit 0; fi
-      - git config --global url."https://foo:${GITHUB_PERSONAL_ACCESS_TOKEN}@github.com/gh-org-screening".insteadOf "https://github.com/gh-org-screening"
-      - >-
-        cd terraform;
+  TerraformInitPlan:
+      image: hashicorp/terraform:1.0.5
+      title: Terraform Init, Plan
+      working_directory: ${{clone}}
+      commands:
+        - if [ ! -d "terraform" ]; then exit 0; fi
+        - git config --global url."https://foo:${GITHUB_PERSONAL_ACCESS_TOKEN}@github.com/gh-org-screening".insteadOf "https://github.com/gh-org-screening"
+        - >-
+          cd terraform;
+          terraform init
+          -input=false
+          -backend-config=environments/${TARGET_ENVIRONMENT}/remote-backend.properties
+        - terraform validate
+        - >-
+          terraform plan
+          -out=${TARGET_ENVIRONMENT}_tfplan
+          -var-file=environments/${TARGET_ENVIRONMENT}/terraform.tfvars
+      stage: terraform
 
-        terraform init
-        -input=false
-        -backend-config=environments/${TARGET_ENVIRONMENT}/remote-backend.properties
-      - terraform validate
-      - >-
-        terraform plan
-        -out=${TARGET_ENVIRONMENT}_tfplan
-        -var-file=environments/${TARGET_ENVIRONMENT}/terraform.tfvars
-      - >-
-        terraform apply ${TARGET_ENVIRONMENT}_tfplan
-    stage: terraform
+  ReviewTerraformPlanAndApprove:
+      type: pending-approval
+      title: Wait for approval
+      timeout:
+        duration: 300
+        finalState: denied
+      stage: terraform
+      when:
+        condition:
+          all:
+            ProductionEnv: '"${{TARGET_ENVIRONMENT}}" == "prod"'
+
+  TerraformApply:
+      image: hashicorp/terraform:1.0.5
+      title: Terraform Apply
+      working_directory: ${{clone}}
+      stage: terraform
+      commands:
+        - if [ ! -d "terraform" ]; then exit 0; fi
+        - git config --global url."https://foo:${GITHUB_PERSONAL_ACCESS_TOKEN}@github.com/gh-org-screening".insteadOf "https://github.com/gh-org-screening"
+        - cd terraform;
+          terraform init
+          -input=false
+          -backend-config=environments/${TARGET_ENVIRONMENT}/remote-backend.properties
+        - terraform apply ${TARGET_ENVIRONMENT}_tfplan
 
   sync_and_wait:
     title: Sync ArgoCD app and wait
     type: argocd-sync
     stage: sync
     arguments:
-      context: argocd-dev
+      context: $(if [ ${TARGET_ENVIRONMENT} == "prod" ];then echo "argocd-prod"; else echo "argocd-dev";fi)
       app_name: ${{APP_NAME}}-${TARGET_ENVIRONMENT}
       wait_healthy: true
       debug: true
