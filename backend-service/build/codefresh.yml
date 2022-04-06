@@ -4,6 +4,7 @@ stages:
   - clone
   - build
   - prepare
+  - scan
   - test
   - image
   - enrich
@@ -55,7 +56,27 @@ steps:
         - secret_arn: codefresh
           key: github_personal_access_token
           store_in: GITHUB_PERSONAL_ACCESS_TOKEN
+        - secret_arn: codefresh
+          key: snyk_token
+          store_in: SNYK_TOKEN
+        - secret_arn: codefresh
+          key: snyk_org
+          store_in: SNYK_ORG
     stage: prepare
+
+  SnykRepoScan:
+    title: Snyk Repo Scan
+    image: node:slim
+    working_directory: ${{clone}}
+    fail_fast: false
+    environment:
+        - SNYK_TOKEN=${SNYK_TOKEN}
+        - SNYK_ORG=${SNYK_ORG}
+    commands:
+      - yarn global add snyk
+      - snyk test --severity-threshold=high
+      - snyk monitor
+    stage: scan  
 
   sonar:
     title: sonar analysis

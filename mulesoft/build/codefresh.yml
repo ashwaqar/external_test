@@ -3,6 +3,7 @@ version: 1.0
 stages:
   - clone
   - prepare
+  - scan
   - build
   - package
 
@@ -53,8 +54,28 @@ steps:
         - secret_arn: mulesoft/${{TARGET_ENVIRONMENT}}/apikeys
           key: artifactory_password
           store_in: MULESOFT_ARTIFACTORY_PASSWORD
+        - secret_arn: codefresh
+          key: snyk_token
+          store_in: SNYK_TOKEN
+        - secret_arn: codefresh
+          key: snyk_org
+          store_in: SNYK_ORG
     stage: prepare
 
+  SnykRepoScan:
+    title: Snyk Repo Scan
+    image: node:slim
+    working_directory: ${{clone}}
+    fail_fast: false
+    environment:
+        - SNYK_TOKEN=${SNYK_TOKEN}
+        - SNYK_ORG=${SNYK_ORG}
+    commands:
+      - yarn global add snyk
+      - snyk test --severity-threshold=high
+      - snyk monitor
+    stage: scan
+    
   GenerateConnectedAppToken:
     title: Generate Connected App Token
     type: freestyle
