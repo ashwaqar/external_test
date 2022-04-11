@@ -57,9 +57,6 @@ steps:
         - secret_arn: codefresh
           key: snyk_token
           store_in: SNYK_TOKEN
-        - secret_arn: codefresh
-          key: snyk_org
-          store_in: SNYK_ORG
     stage: prepare
 
   SnykRepoScan:
@@ -69,11 +66,15 @@ steps:
     fail_fast: false
     environment:
         - SNYK_TOKEN=${SNYK_TOKEN}
-        - SNYK_ORG=${SNYK_ORG}
+        - SNYK_ORG=GH Screening
     commands:
       - yarn global add snyk
       - snyk test --severity-threshold=high
       - snyk monitor
+    when:
+        condition:
+          all:
+            noSkipCiInCommitMessage: 'includes(lower("${{CF_COMMIT_MESSAGE}}"), "skip snyk") == false'  
     stage: scan
     
   GenerateConnectedAppToken:
