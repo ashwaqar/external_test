@@ -57,6 +57,12 @@ steps:
           key: github_personal_access_token
           store_in: GITHUB_PERSONAL_ACCESS_TOKEN
         - secret_arn: codefresh
+          key: pcc_user
+          store_in: PCC_USER
+        - secret_arn: codefresh
+          key: pcc_password
+          store_in: PCC_PASS
+        - secret_arn: codefresh
           key: snyk_token
           store_in: SNYK_TOKEN
     stage: prepare
@@ -95,6 +101,17 @@ steps:
         -Dsonar.login=${SONAR_TOKEN}
     stage: test
 
+  # Dedicated twistcli step to ensure twistcli can be pulled (in case target image doesn't have wget).
+  # Pulls twistcli to shared volume (the current work directory) which is automatically mounted in target image.
+  GetTwistCLI:
+    title: Pulling twistcli from Console
+    image: alpine
+    commands:
+      - |
+        wget --header "Authorization: Basic $(echo -n $PCC_USER:$PCC_PASS | base64 | tr -d '\n')" "$PCC_CONSOLE_URL/api/v1/util/twistcli"
+        chmod a+x ./twistcli
+    stage: prepare
+
   DockerBuild:
     title: Building Docker image
     type: build
@@ -106,6 +123,15 @@ steps:
     registry: gh-screening-repo
     dockerfile: Dockerfile
     stage: image
+
+  ScanImage:
+    title: Scanning image with Prisma Cloud Compute
+    image: ${{DockerBuild}}
+    commands:
+      # --containerized is used because Codefresh SaaS runtime environment doesn't allow access to the Docker socket
+      # https://support.codefresh.io/hc/en-us/articles/360017901040-How-to-Access-the-Docker-Daemon-in-a-Codefresh-build
+      - ./twistcli images scan --address $PCC_CONSOLE_URL --user $PCC_USER --password $PCC_PASS --containerized --details ${{steps.DockerBuild.imageName}}:${{CF_BRANCH_TAG_NORMALIZED}}-${{CF_SHORT_REVISION}}
+    stage: scan
 
   JiraIssueExtractor:
     title: Extract jira issue from message and convert it to image annotation
