@@ -68,7 +68,7 @@ steps:
         - SNYK_TOKEN=${SNYK_TOKEN}
         - SNYK_ORG='GH Screening'
     commands:
-      - snyk test --severity-threshold=critical
+      - snyk test --severity-threshold=medium
       - snyk monitor
     when:
         condition:
