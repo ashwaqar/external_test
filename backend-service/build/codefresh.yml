@@ -76,7 +76,7 @@ steps:
     when:
         condition:
           all:
-            noSkipCiInCommitMessage: 'includes(lower("${{CF_COMMIT_MESSAGE}}"), "skip snyk") == false'  
+            noSkipSnykScan: 'includes(lower("${{RUN_SNYK_SCAN}}"), "run snyk scan") == false'  
     stage: scan  
 
   sonar:
