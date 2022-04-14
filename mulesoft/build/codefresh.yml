@@ -66,7 +66,7 @@ steps:
     fail_fast: false
     environment:
         - SNYK_TOKEN=${SNYK_TOKEN}
-        - SNYK_ORG=GH Screening
+        - SNYK_ORG='GH Screening'
     commands:
       - yarn global add snyk
       - snyk test --severity-threshold=high
@@ -74,7 +74,7 @@ steps:
     when:
         condition:
           all:
-            noSkipCiInCommitMessage: 'includes(lower("${{CF_COMMIT_MESSAGE}}"), "skip snyk") == false'  
+            noSkipSnykScan: 'includes(lower("${{RUN_SNYK_SCAN}}"), "run snyk scan") == false'
     stage: scan
     
   GenerateConnectedAppToken:
