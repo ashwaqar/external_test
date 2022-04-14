@@ -63,20 +63,19 @@ steps:
 
   SnykRepoScan:
     title: Snyk Repo Scan
-    image: node:slim
+    image: snyk/snyk:maven-3-jdk-8
     working_directory: ${{clone}}
     fail_fast: false
     environment:
         - SNYK_TOKEN=${SNYK_TOKEN}
         - SNYK_ORG='GH Screening'
     commands:
-      - yarn global add snyk
-      - snyk test --severity-threshold=high
+      - snyk test --severity-threshold=critical
       - snyk monitor
     when:
         condition:
           all:
-            noSkipSnykScan: 'includes(lower("${{RUN_SNYK_SCAN}}"), "run snyk scan") == false'
+            RunSnykScan: '${{RUN_SNYK_SCAN}} == true'
     stage: scan  
 
   sonar:
