@@ -65,10 +65,15 @@ steps:
       commands:
         - if [ ! -d "terraform" ]; then exit 0; fi
         - git config --global url."https://foo:${GITHUB_PERSONAL_ACCESS_TOKEN}@github.com/gh-org-screening".insteadOf "https://github.com/gh-org-screening"
-        - cd terraform;
+        - >-
+          cd terraform;
           terraform init
           -input=false
           -backend-config=environments/${TARGET_ENVIRONMENT}/remote-backend.properties
+        - >-
+          terraform plan
+          -out=${TARGET_ENVIRONMENT}_tfplan
+          -var-file=environments/${TARGET_ENVIRONMENT}/terraform.tfvars
         - terraform apply ${TARGET_ENVIRONMENT}_tfplan
 
   sync_and_wait:
