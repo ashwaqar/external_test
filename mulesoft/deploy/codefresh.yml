@@ -52,6 +52,9 @@ steps:
         - secret_arn: mulesoft/${{TARGET_ENVIRONMENT}}/apikeys
           key: artifactory_password
           store_in: MULESOFT_ARTIFACTORY_PASSWORD
+        - secret_arn: 'codefresh'
+          key: github_personal_access_token
+          store_in: GITHUB_PERSONAL_ACCESS_TOKEN
     stage: prepare
 
   GenerateConnectedAppToken:
@@ -95,6 +98,7 @@ steps:
     working_directory: ${{clone}}
     commands:
       - if [ ! -d "terraform" ]; then exit 0; fi
+      - git config --global url."https://foo:${GITHUB_PERSONAL_ACCESS_TOKEN}@github.com/gh-org-screening".insteadOf "https://github.com/gh-org-screening"
       - >-
         cd terraform;
 
