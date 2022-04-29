@@ -178,7 +178,7 @@ steps:
   UpdateDev:
       title: Update Dev Version
       type: freestyle
-      image: quay.io/bitnami/git:latest
+      image: bitnami/git:latest
       working_directory: ${{cloneDeployment}}
       when:
         condition:
