@@ -2,6 +2,7 @@ version: "1.0"
 
 stages:
   - clone
+  - fetchsecrets
   - build
   - prepare
   - scan
@@ -18,6 +19,39 @@ steps:
     revision: ${{CF_BRANCH}}
     git: gh-test-git-provider
     stage: clone
+
+  FetchSecrets:
+    title: Fetch secrets from AWS Secrets Manager
+    type: aws-secrets-manager
+    arguments:
+      AWS_DEFAULT_REGION: us-west-2
+      secrets:
+        - secret_arn: codefresh
+          key: sonar_token
+          store_in: SONAR_TOKEN
+        - secret_arn: codefresh
+          key: jira_api_token
+          store_in: JIRA_API_TOKEN
+        - secret_arn: codefresh
+          key: github_personal_access_token
+          store_in: GITHUB_PERSONAL_ACCESS_TOKEN
+        - secret_arn: codefresh
+          key: pcc_user
+          store_in: PCC_USER
+        - secret_arn: codefresh
+          key: pcc_password
+          store_in: PCC_PASS
+        - secret_arn: codefresh
+          key: snyk_token
+          store_in: SNYK_TOKEN
+        - secret_arn: mulesoft/dev/apikeys
+          key: artifactory_username
+          store_in: ARTIFACTORY_USERNAME
+        - secret_arn: mulesoft/dev/apikeys
+          key: artifactory_password
+          store_in: ARTIFACTORY_PASSWORD  
+        
+    stage: fetchsecrets
 
   MavenBuild:
     title: mvn build
@@ -61,32 +95,6 @@ steps:
       - export PROJECT_VERSION=$( mvn help:evaluate -Dexpression=project.version -q -DforceStdout )
       - echo "project version is ${PROJECT_VERSION}"
       - cf_export PROJECT_VERSION=${PROJECT_VERSION}
-    stage: prepare
-
-  FetchSecrets:
-    title: Fetch secrets from AWS Secrets Manager
-    type: aws-secrets-manager
-    arguments:
-      AWS_DEFAULT_REGION: us-west-2
-      secrets:
-        - secret_arn: codefresh
-          key: sonar_token
-          store_in: SONAR_TOKEN
-        - secret_arn: codefresh
-          key: jira_api_token
-          store_in: JIRA_API_TOKEN
-        - secret_arn: codefresh
-          key: github_personal_access_token
-          store_in: GITHUB_PERSONAL_ACCESS_TOKEN
-        - secret_arn: codefresh
-          key: pcc_user
-          store_in: PCC_USER
-        - secret_arn: codefresh
-          key: pcc_password
-          store_in: PCC_PASS
-        - secret_arn: codefresh
-          key: snyk_token
-          store_in: SNYK_TOKEN
     stage: prepare
 
   SnykRepoScan:
