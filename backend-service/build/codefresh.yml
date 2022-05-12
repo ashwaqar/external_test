@@ -58,32 +58,19 @@ steps:
     type: freestyle
     image: maven:3.8-openjdk-11-slim
     working_directory: ${{clone}}
-      when:
-        condition:
-          all:
-            whenOES: 'includes(lower("${{APP_NAME}}"), "order-events-service") == false'
     commands:
       - >-
-        mvn clean package
-        -Dmaven.repo.local=/codefresh/volume/m2_repository
-    stage: build
-
-  MavenBuildOES:
-    title: mvn build oes
-    type: freestyle
-    image: maven:3.8-openjdk-11-slim
-    working_directory: ${{clone}}
-      when:
-        condition:
-          all:
-            whenOES: 'includes(lower("${{APP_NAME}}"), "order-events-service") == true'
-    commands:
-      - >-
+        if [ ${APP_NAME} = "order-events-service" ];
+        then 
         mvn clean package -s ./build/maven-settings.xml
         -Dmaven.repo.local=/codefresh/volume/m2_repository
         -Dserver.username=${ARTIFACTORY_USERNAME}
         -Dserver.password=${ARTIFACTORY_PASSWORD}
-        -Dskiptests=true
+        -Dskiptests=true;
+        else 
+        mvn clean package
+        -Dmaven.repo.local=/codefresh/volume/m2_repository;
+        fi
     stage: build
 
   MavenGetProjectVersion:
