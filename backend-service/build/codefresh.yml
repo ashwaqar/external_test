@@ -2,6 +2,7 @@ version: "1.0"
 
 stages:
   - clone
+  - fetchsecrets
   - build
   - prepare
   - scan
@@ -18,28 +19,6 @@ steps:
     revision: ${{CF_BRANCH}}
     git: gh-test-git-provider
     stage: clone
-
-  MavenBuild:
-    title: mvn build
-    type: freestyle
-    image: maven:3.8-openjdk-11-slim
-    working_directory: ${{clone}}
-    commands:
-      - >-
-        mvn clean package
-        -Dmaven.repo.local=/codefresh/volume/m2_repository
-    stage: build
-
-  MavenGetProjectVersion:
-    title: mvn get project version
-    type: freestyle
-    image: maven:3.8-openjdk-11-slim
-    working_directory: ${{clone}}
-    commands:
-      - export PROJECT_VERSION=$( mvn help:evaluate -Dexpression=project.version -q -DforceStdout )
-      - echo "project version is ${PROJECT_VERSION}"
-      - cf_export PROJECT_VERSION=${PROJECT_VERSION}
-    stage: prepare
 
   FetchSecrets:
     title: Fetch secrets from AWS Secrets Manager
@@ -65,6 +44,44 @@ steps:
         - secret_arn: codefresh
           key: snyk_token
           store_in: SNYK_TOKEN
+        - secret_arn: mulesoft/dev/apikeys
+          key: artifactory_username
+          store_in: ARTIFACTORY_USERNAME
+        - secret_arn: mulesoft/dev/apikeys
+          key: artifactory_password
+          store_in: ARTIFACTORY_PASSWORD  
+        
+    stage: fetchsecrets
+
+  MavenBuild:
+    title: mvn build
+    type: freestyle
+    image: maven:3.8-openjdk-11-slim
+    working_directory: ${{clone}}
+    commands:
+      - >-
+        if [ ${APP_NAME} = "order-events-service" ];
+        then 
+        mvn clean package -s ./build/maven-settings.xml
+        -Dmaven.repo.local=/codefresh/volume/m2_repository
+        -Dserver.username=${ARTIFACTORY_USERNAME}
+        -Dserver.password=${ARTIFACTORY_PASSWORD}
+        -Dskiptests=true;
+        else 
+        mvn clean package
+        -Dmaven.repo.local=/codefresh/volume/m2_repository;
+        fi
+    stage: build
+
+  MavenGetProjectVersion:
+    title: mvn get project version
+    type: freestyle
+    image: maven:3.8-openjdk-11-slim
+    working_directory: ${{clone}}
+    commands:
+      - export PROJECT_VERSION=$( mvn help:evaluate -Dexpression=project.version -q -DforceStdout )
+      - echo "project version is ${PROJECT_VERSION}"
+      - cf_export PROJECT_VERSION=${PROJECT_VERSION}
     stage: prepare
 
   SnykRepoScan:
@@ -79,9 +96,9 @@ steps:
       - snyk test --severity-threshold=medium
       - snyk monitor
     when:
-        condition:
-          all:
-            RunSnykScan: '${{RUN_SNYK_SCAN}} == true'
+      condition:
+        all:
+          RunSnykScan: '${{RUN_SNYK_SCAN}} == true'
     stage: scan  
 
   sonar:
