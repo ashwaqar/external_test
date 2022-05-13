@@ -123,6 +123,10 @@ steps:
   GetTwistCLI:
     title: Pulling twistcli from Console
     image: alpine
+    when:
+      condition:
+        all:
+          whenOES: 'includes(lower("${{APP_NAME}}"), "order-events-service") == false'
     commands:
       - |
         wget --header "Authorization: Basic $(echo -n $PCC_USER:$PCC_PASS | base64 | tr -d '\n')" "$PCC_CONSOLE_URL/api/v1/util/twistcli"
