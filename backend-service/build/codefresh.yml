@@ -96,9 +96,9 @@ steps:
       - snyk test --severity-threshold=medium
       - snyk monitor
     when:
-        condition:
-          all:
-            RunSnykScan: '${{RUN_SNYK_SCAN}} == true'
+      condition:
+        all:
+          RunSnykScan: '${{RUN_SNYK_SCAN}} == true'
     stage: scan  
 
   sonar:
