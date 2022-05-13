@@ -148,6 +148,10 @@ steps:
   ScanImage:
     title: Scanning image with Prisma Cloud Compute
     image: ${{DockerBuild}}
+    when:
+      condition:
+        all:
+          whenOES: 'includes(lower("${{APP_NAME}}"), "order-events-service") == false'
     commands:
       # --containerized is used because Codefresh SaaS runtime environment doesn't allow access to the Docker socket
       # https://support.codefresh.io/hc/en-us/articles/360017901040-How-to-Access-the-Docker-Daemon-in-a-Codefresh-build
