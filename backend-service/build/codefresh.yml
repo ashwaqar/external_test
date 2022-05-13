@@ -123,10 +123,6 @@ steps:
   GetTwistCLI:
     title: Pulling twistcli from Console
     image: alpine
-    when:
-      condition:
-        all:
-          whenOES: 'includes(lower("${{APP_NAME}}"), "order-events-service") == false'
     commands:
       - |
         wget --header "Authorization: Basic $(echo -n $PCC_USER:$PCC_PASS | base64 | tr -d '\n')" "$PCC_CONSOLE_URL/api/v1/util/twistcli"
@@ -148,10 +144,6 @@ steps:
   ScanImage:
     title: Scanning image with Prisma Cloud Compute
     image: ${{DockerBuild}}
-    when:
-      condition:
-        all:
-          whenOES: 'includes(lower("${{APP_NAME}}"), "order-events-service") == false'
     commands:
       # --containerized is used because Codefresh SaaS runtime environment doesn't allow access to the Docker socket
       # https://support.codefresh.io/hc/en-us/articles/360017901040-How-to-Access-the-Docker-Daemon-in-a-Codefresh-build
