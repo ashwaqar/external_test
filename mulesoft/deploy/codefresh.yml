@@ -52,6 +52,12 @@ steps:
         - secret_arn: mulesoft/${{TARGET_ENVIRONMENT}}/apikeys
           key: artifactory_password
           store_in: MULESOFT_ARTIFACTORY_PASSWORD
+        - secret_arn: mulesoft/${{TARGET_ENVIRONMENT}}/apikeys
+          key: awsAccessKey
+          store_in: AWS_ACCESS_KEY
+        - secret_arn: mulesoft/${{TARGET_ENVIRONMENT}}/apikeys
+          key: awsSecretKey
+          store_in: AWS_SECRET_KEY
         - secret_arn: 'codefresh'
           key: github_personal_access_token
           store_in: GITHUB_PERSONAL_ACCESS_TOKEN
@@ -128,6 +134,10 @@ steps:
         mvn -s ../${{CF_EXTERNAL_REPO_NAME}}/mulesoft/settings.xml mule:deploy
         -Dmaven.repo.local=/codefresh/volume/m2_repository
         -P${{TARGET_ENVIRONMENT}}
+        -Daws.region=us-west-2
+        -Daws.location=mulesoft/${{TARGET_ENVIRONMENT}}/apikeys
+        -Daws.accessKey=${AWS_ACCESS_KEY}
+        -Daws.secretKey=${AWS_SECRET_KEY}
         -Dartifactory.username=${MULESOFT_ARTIFACTORY_USERNAME}
         -Dartifactory.password=${MULESOFT_ARTIFACTORY_PASSWORD}
         -Dmule.artifact=/codefresh/volume/m2_repository/com/guardant/$PROJECT_ARTIFACT_ID/$PROJECT_VERSION/$PROJECT_ARTIFACT_ID-$PROJECT_VERSION-mule-application.jar
