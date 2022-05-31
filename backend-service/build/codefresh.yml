@@ -125,7 +125,7 @@ steps:
     image: alpine
     commands:
       - |
-        wget --header "Authorization: Basic $(echo -n $PCC_USER:$PCC_PASS | base64 | tr -d '\n')" "$PCC_CONSOLE_URL/api/v1/util/twistcli"
+        wget --header "Authorization: Basic $(echo -n $PCC_USER:$PCC_PASS | base64 | tr -d '\n')" "$PCC_CONSOLE_URL/api/v1/util/twistcli" -O twistcli
         chmod a+x ./twistcli
     stage: prepare
 
