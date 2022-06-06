@@ -1,0 +1,89 @@
+version: 1.0
+
+stages:
+  - clone
+  - prepare
+  - zip
+  - deploy
+
+steps:
+  clone:
+    title: Cloning MuleSoft Repository
+    type: git-clone
+    repo: ${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}
+    revision: ${{CF_BRANCH}}
+    git: gh-test-git-provider
+    stage: clone
+
+  CloneCodeFreshExtResource:
+    title: Cloning Mulesoft Scripts Repository
+    type: git-clone
+    repo: ${{CF_REPO_OWNER}}/${{CF_EXTERNAL_REPO_NAME}}
+    revision: ${{CF_EXTERNAL_BRANCH}}
+    git: gh-test-git-provider
+    stage: clone
+
+  FetchSecrets:
+    title: Fetch secrets from AWS Secrets Manager
+    type: aws-secrets-manager
+    arguments:
+      AWS_DEFAULT_REGION: us-west-2
+      secrets:
+        - secret_arn: codefresh
+          key: github_personal_access_token
+          store_in: GITHUB_PERSONAL_ACCESS_TOKEN
+    stage: prepare
+
+  GenerateConnectedAppToken:
+    title: Generate connected app token
+    type: freestyle
+    image: dwdraju/alpine-curl-jq:latest
+    working_directory: ${{CloneCodeFreshExtResource}}
+    commands:
+      - ls -lth
+      - mulesoft/scripts/fetch_connected_app_token.sh
+    stage: prepare
+
+  zip:
+    title: Zip Package
+    type: freestyle
+    image: brandography/alpine-zip:latest
+    working_directory: ${{clone}}
+    commands:
+      - zip deployment-package.zip lambda_function.py
+    stage: zip
+
+  TerraformInitPlanApply:
+    image: hashicorp/terraform:1.0.5
+    title: Terraform Init, Plan and Apply
+    working_directory: ${{clone}}
+    commands:
+      - if [ ! -d "terraform" ]; then exit 0; fi
+      - git config --global url."https://foo:${GITHUB_PERSONAL_ACCESS_TOKEN}@github.com/gh-org-screening".insteadOf "https://github.com/gh-org-screening"
+      - >-
+        cd terraform;
+
+        terraform init
+        -input=false
+        -backend-config=environments/${TARGET_ENVIRONMENT}/remote-backend.properties
+      - terraform validate
+      - >-
+        terraform plan
+        -out=${TARGET_ENVIRONMENT}_tfplan
+        -var-file=environments/${TARGET_ENVIRONMENT}/terraform.tfvars
+      - >-
+        terraform apply ${TARGET_ENVIRONMENT}_tfplan
+    stage: deploy
+
+  deploy:
+    title: Deploy Zip Archive
+    type: freestyle
+    image: amazon/aws-cli:2.4.12
+    working_directory: ${{zip}}
+    commands:
+      - yum update && yum install -y jq
+      - ls -lth
+      - aws lambda update-function-code --function-name So2CIntgErrRetryHandler --publish --zip-file fileb://deployment-package.zip > cmd-output.json
+      - return_status=$(jq --raw-output  .LastUpdateStatus cmd-output.json)
+      - if [ $return_status != "Successful" ]; then exit 1; fi
+    stage: deploy
