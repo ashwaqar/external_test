@@ -5,6 +5,7 @@ stages:
   - prepare
   - terraform
   - sync
+  - publish-marker
 
 steps:
   clone:
@@ -12,6 +13,14 @@ steps:
     type: git-clone
     repo: ${{CF_REPO_OWNER}}/${{CF_REPO_NAME}}
     revision: ${{CF_BRANCH}}
+    git: gh-test-git-provider
+    stage: clone
+
+  CloneCodeFreshExtResource:
+    title: Cloning Mulesoft Scripts Repository
+    type: git-clone
+    repo: ${{CF_REPO_OWNER}}/${{CF_EXTERNAL_REPO_NAME}}
+    revision: ${{CF_EXTERNAL_BRANCH}}
     git: gh-test-git-provider
     stage: clone
 
@@ -24,6 +33,12 @@ steps:
         - secret_arn: 'codefresh'
           key: github_personal_access_token
           store_in: GITHUB_PERSONAL_ACCESS_TOKEN
+        - secret_arn: 'codefresh'
+          key: new_relic_api_key
+          store_in: NEW_RELIC_API_KEY
+        - secret_arn: 'codefresh'
+          key: argo_dev_admin_creds
+          store_in: ARGOCD_CREDENTIALS
     stage: prepare
 
   TerraformInitPlan:
@@ -87,3 +102,22 @@ steps:
       debug: true
       additional_flags:
         - '--grpc-web'  # Seems to always be needed, regardless of Argo CD using LB svc or Ingress
+
+  FetchMetadataFromArgoCD:
+    title: Fetch manifest metadata from ArgoCD
+    type: freestyle
+    stage: publish-marker
+    image: argoproj/argocd:v2.3.2
+    working_directory: ${{CloneCodeFreshExtResource}}
+    commands:
+      - ls -lth scripts
+      - scripts/fetch_image_version_from_argocd_manifest.sh
+
+  PublishDeploymentMarker:
+    title: publish deploymnent marker on new relic APM
+    type: freestyle
+    stage: publish-marker
+    image: everpeace/curl-jq:latest
+    working_directory: ${{CloneCodeFreshExtResource}}
+    commands:
+      - scripts/publish-newrelic-marker.sh
