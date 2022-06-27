@@ -82,6 +82,10 @@ steps:
       - export PROJECT_VERSION=$( mvn help:evaluate -Dexpression=project.version -q -DforceStdout )
       - echo "project version is ${PROJECT_VERSION}"
       - cf_export PROJECT_VERSION=${PROJECT_VERSION}
+    when:
+        condition:
+          all:
+            whenOES: 'includes(lower("${{APP_NAME}}"), "so2c-audit-service") == false'
     stage: prepare
 
   SnykRepoScan:
