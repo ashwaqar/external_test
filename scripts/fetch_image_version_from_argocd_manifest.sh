@@ -1,6 +1,12 @@
 #!/bin/bash
 
-argocd login argocd-dev.screening.guardanthealth.com --username admin --password ${ARGOCD_CREDENTIALS} --grpc-web
+ARGOCD_URL="argocd-dev.screening.guardanthealth.com"
+
+if [ "${TARGET_ENVIRONMENT}" = "prod" ]; then
+    ARGOCD_URL="argocd.screening.guardanthealth.com"
+fi
+
+argocd login ${ARGOCD_URL} --username admin --password ${ARGOCD_CREDENTIALS} --grpc-web
 
 get_image_version(){
     DEPLOYED_VERSION=$(argocd app manifests "${APP_NAME}-${TARGET_ENVIRONMENT}" --grpc-web | grep "image:")
