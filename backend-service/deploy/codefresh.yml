@@ -37,7 +37,7 @@ steps:
           key: new_relic_api_key
           store_in: NEW_RELIC_API_KEY
         - secret_arn: 'codefresh'
-          key: argo_dev_admin_creds
+          key: argo_prod_admin_creds
           store_in: ARGOCD_CREDENTIALS
     stage: prepare
 
