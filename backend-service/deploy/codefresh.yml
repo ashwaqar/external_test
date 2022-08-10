@@ -24,13 +24,6 @@ steps:
     git: gh-test-git-provider
     stage: clone
   
-  SetVariables:
-    title: Set the environment based variables
-    image: alpine:latest
-    commands:
-        - if [ ${TARGET_ENVIRONMENT} == "prod" ];then echo argo-secrets-key=argo_prod_admin_creds >> ${{CF_VOLUME_PATH}}/env_vars_to_export; else echo argo-secrets-key=argo_dev_admin_creds >> ${{CF_VOLUME_PATH}}/env_vars_to_export;fi
-    stage: prepare
-    
   FetchSecrets:
     title: Fetch secrets from AWS Secrets Manager
     type: aws-secrets-manager
@@ -44,7 +37,7 @@ steps:
           key: new_relic_api_key
           store_in: NEW_RELIC_API_KEY
         - secret_arn: 'codefresh'
-          key: ${{argo-secrets-key}}
+          key: argo_admin_creds
           store_in: ARGOCD_CREDENTIALS
     stage: prepare
 
